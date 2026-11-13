@@ -1,0 +1,8 @@
+{
+  "account": {
+    "id": "acct-001",
+    "owner": "Cliente",
+    "balance_cents": 100000
+  },
+  "transactions": []
+}

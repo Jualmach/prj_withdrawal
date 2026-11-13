@@ -1,0 +1,5 @@
+/data/state.json
+/prj_withdrawal.zip
+/prj_withdrawal-source.zip
+*.exe
+*.test
