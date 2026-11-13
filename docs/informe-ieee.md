@@ -30,7 +30,7 @@ Todos los importes deben ser positivos y tener hasta dos decimales. Los importes
 
 ## III. Proceso de desarrollo BDD/TDD
 
-Se redactaron escenarios de negocio en `features/US-01a-retiro.feature`, `features/US-01b-abono.feature` y `features/US-04-integridad-transacciones.feature`. Las pruebas de Go traducen las condiciones Given/When/Then a verificaciones ejecutables, y se ejecutan con `go test ./...`.
+Se redactaron escenarios de negocio en `features/US-01a-retiro.feature`, `features/US-01b-abono.feature` y `features/US-04-integridad-transacciones.feature`. Godog (Cucumber para Go) carga esos archivos y enlaza las condiciones Given/When/Then con los pasos definidos en `internal/bdd`; se ejecutan con `go test ./...`. Las pruebas unitarias adicionales comprueban reglas de dominio, CLI, servidor y persistencia.
 
 La secuencia incremental es:
 
@@ -92,7 +92,7 @@ go test ./...
 go vet ./...
 ```
 
-El workflow de GitHub Actions ejecuta `go test -race -cover ./...` y `go vet ./...` en cada push y pull request. El ZIP se genera con `scripts/package.ps1`; no contiene binarios ni estado local.
+El workflow de GitHub Actions ejecuta `go test -race -cover ./...` (incluidos los escenarios Godog) y `go vet ./...` en cada push y pull request. El ZIP se genera con `scripts/package.ps1`; no contiene binarios ni estado local.
 
 ## VII. Limitaciones y trabajo futuro
 

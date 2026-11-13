@@ -8,16 +8,16 @@ Proyecto incremental de Semana 7c: retiro y abono en efectivo, registro JSON de 
 2. **Incremento — Abono:** abono en efectivo (US-01b).
 3. **Incremento — Integridad:** registro JSON de operaciones exitosas, rechazadas y errores (US-04); el saldo y el historial se guardan en un mismo archivo para evitar actualizaciones parciales.
 4. **Refactorización — App Web:** interfaz HTTP que reutiliza el mismo dominio, persistencia y reglas del CLI.
-5. **Calidad y entrega:** escenarios Gherkin, pruebas Go, informe estilo IEEE y script para generar el ZIP fuente.
+5. **Calidad y entrega:** escenarios Gherkin ejecutados con Godog (Cucumber para Go), pruebas Go, informe estilo IEEE y script para generar el ZIP fuente.
 
-Los escenarios se encuentran en `features/`. Las pruebas ejecutables TDD/BDD se encuentran junto a los paquetes Go en `internal/`.
+Los escenarios se encuentran en `features/`. Godog los ejecuta como parte de `go test ./...`; las pruebas unitarias TDD de cada paquete Go están junto al código en `internal/`.
 
 ## Requisitos
 
 - Go 1.23 o posterior.
 - PowerShell 5.1 o posterior para crear el ZIP en Windows.
 
-El proyecto solo usa la biblioteca estándar de Go; no requiere descargar dependencias.
+Las reglas de negocio usan la biblioteca estándar de Go. Godog se descarga para ejecutar los escenarios Gherkin como pruebas BDD.
 
 ## Ejecutar el CLI
 
@@ -61,6 +61,7 @@ Los importes se representan como centavos enteros para evitar errores de redonde
 ## Pruebas y análisis estático
 
 ```powershell
+go mod download
 go test ./...
 go vet ./...
 ```
@@ -81,4 +82,4 @@ El ZIP omite `.git`, binarios y el estado de datos local.
 
 ## Publicación
 
-El código está preparado para publicarse como repositorio GitHub y cuenta con CI para pruebas y `go vet`. La publicación requiere que GitHub permita crear un repositorio nuevo con la sesión autenticada del propietario. El informe no afirma que el repositorio ya esté publicado.
+El código se publica en [Jualmach/prj_withdrawal](https://github.com/Jualmach/prj_withdrawal). GitHub Actions ejecuta las pruebas Go, incluidos los escenarios Godog, y `go vet` en cada push y pull request.
