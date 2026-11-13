@@ -1,7 +1,10 @@
 # Diseño e implementación incremental de `prj_withdrawal`
 
-**Jorge Medianero Acosta — Escuela Profesional de Ingeniería de Software**  
-**Curso:** DSL / Gherkin-BDD · **Unidad III, Semana 7c**  
+**Julio Alberto Marquina Chahuayo** · Código: 20242017G  
+Facultad de Ingeniería Industrial y de Sistemas · Ingeniería de Software  
+Universidad Nacional de Ingeniería · julio.marquina.c@uni.pe  
+**Docente:** Ing. Jorge Medianero Acosta  
+**Curso:** SW608U — Lenguajes de Dominio Específico · **Sección:** U · **Unidad III, Semana 7c**  
 **Fecha de elaboración:** 12 de noviembre de 2026  
 **Tipo de aplicación final:** Aplicación Web en Go
 
