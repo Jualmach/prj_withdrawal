@@ -1,111 +1,76 @@
-# Diseño e implementación incremental de `prj_withdrawal`
+# Aplicación Web `prj_withdrawal`: retiro, abono e integridad de transacciones
 
 **Julio Alberto Marquina Chahuayo** · Código: 20242017G  
 Facultad de Ingeniería Industrial y de Sistemas · Ingeniería de Software  
-Universidad Nacional de Ingeniería · julio.marquina.c@uni.pe  
-**Docente:** Ing. Jorge Medianero Acosta  
-**Curso:** SW608U — Lenguajes de Dominio Específico · **Sección:** U · **Unidad III, Semana 7c**  
-**Fecha de elaboración:** 12 de noviembre de 2026  
-**Tipo de aplicación final:** Aplicación Web en Go
+Universidad Nacional de Ingeniería · Docente: Ing. Jorge Medianero Acosta  
+Curso: SW608U — Lenguajes de Dominio Específico · Unidad III, Semana 7c  
+**Entrega 3: Aplicación Web refactorizada**
 
 ## Resumen
 
-Este informe describe el desarrollo incremental de `prj_withdrawal`, una aplicación académica para operaciones bancarias de retiro y abono en efectivo. Se implementó primero una interfaz CLI interactiva en Go y luego se incorporaron el abono (US-01b), el registro JSON y la integridad del estado (US-04). Finalmente, se refactorizó la solución para ofrecer una interfaz Web que reutiliza el dominio y la persistencia del CLI. Los escenarios Gherkin definen los comportamientos esperados y las pruebas Go automatizan sus criterios principales. La solución usa centavos enteros y persiste el saldo y el historial en un único documento JSON reemplazado de manera atómica.
+Se presenta la versión final web de `prj_withdrawal`, una aplicación académica en Go para retiros y abonos en efectivo. La solución aplica reglas de negocio centralizadas, persistencia JSON íntegra y pruebas BDD/TDD. El estado de cuenta y su historial se guardan juntos, y cada operación se identifica como exitosa, rechazada por fondos insuficientes o inválida. Los escenarios de US-01a, US-01b y US-04 se conservan como criterios verificables de la funcionalidad final.
 
-**Palabras clave—** BDD, Gherkin, Go, CLI, transacción, JSON, aplicación Web, TDD.
+**Palabras clave—** Go, aplicación Web, BDD, Gherkin, TDD, JSON, transacciones.
 
 ## I. Introducción
 
-El objetivo es convertir la especificación de retiro y abono en comportamientos verificables, manteniendo trazabilidad entre historias de usuario, escenarios Gherkin, código y pruebas. El desarrollo sigue un proceso iterativo e incremental: el CLI es el punto de partida; las operaciones y la auditoría se agregan en incrementos; la interfaz Web se construye después como refactorización, sin duplicar las reglas de negocio.
+El objetivo es ofrecer una interfaz Web para las operaciones bancarias de efectivo y mantener la trazabilidad entre historias de usuario, escenarios Gherkin, reglas de dominio y pruebas. Esta carpeta y el repositorio corresponden a la tercera entrega: el producto refactorizado como aplicación Web.
 
-## II. Alcance y requisitos
+## II. Requisitos
 
-El producto académico cubre una cuenta demo local y una sola instancia de ejecución. No implementa usuarios, autenticación, conexión bancaria, cajero físico ni despliegue en un servicio de hosting.
-
-| ID | Historia / requisito | Criterio observable |
+| ID | Requisito | Criterio observable |
 |---|---|---|
-| US-01a | Retiro en efectivo | Se descuenta el importe si hay saldo; si no, se rechaza y el saldo queda intacto. |
+| US-01a | Retiro en efectivo | Se descuenta un importe positivo hasta el saldo disponible; si lo excede, se rechaza y el saldo permanece. |
 | US-01b | Abono en efectivo | Un importe positivo incrementa el saldo. |
-| US-04 | Integridad y datos | El JSON conserva cuenta e historial juntos; registra éxitos, rechazos y errores de validación. |
-| REF-01 | Refactorización Web | La UI Web invoca el mismo servicio de dominio y presenta saldo e historial. |
+| US-04 | Integridad de transacción y datos | El JSON conserva cuenta e historial; registra éxito, rechazo y error de validación. |
+| REF-01 | Aplicación Web | La interfaz presenta saldo e historial y permite las operaciones anteriores. |
 
-Todos los importes deben ser positivos y tener hasta dos decimales. Los importes se convierten a centavos enteros antes de modificar el saldo. Un retiro que supera el saldo se registra como `declined`; los datos inválidos se registran como `error`.
+Los importes admiten hasta dos decimales y se representan como centavos enteros para evitar errores de redondeo.
 
-## III. Proceso de desarrollo BDD/TDD
+## III. Especificación BDD y pruebas
 
-Se redactaron escenarios de negocio en `features/US-01a-retiro.feature`, `features/US-01b-abono.feature` y `features/US-04-integridad-transacciones.feature`. Godog (Cucumber para Go) carga esos archivos y enlaza las condiciones Given/When/Then con los pasos definidos en `internal/bdd`; se ejecutan con `go test ./...`. Las pruebas unitarias adicionales comprueban reglas de dominio, CLI, servidor y persistencia.
+Los archivos `features/US-01a-retiro.feature`, `features/US-01b-abono.feature` y `features/US-04-integridad-transacciones.feature` contienen los escenarios Given/When/Then. Godog enlaza los escenarios con los pasos de `internal/bdd`; `go test ./...` ejecuta BDD y las pruebas unitarias de dominio, persistencia y servidor HTTP.
 
-La secuencia incremental es:
+## IV. Arquitectura
 
-1. **Punto de partida:** cuenta y retiro por CLI, con saldo consultable.
-2. **Incremento US-01b:** abono en efectivo y verificación del saldo resultante.
-3. **Incremento US-04:** identificadores y resultados auditables en JSON; fallos y errores no alteran indebidamente el saldo.
-4. **Refactorización REF-01:** servidor HTTP y UI Web sobre los mismos paquetes de dominio y almacenamiento.
+- `internal/bank`: tipos, conversión monetaria y reglas de transacción.
+- `internal/storage`: carga y persistencia del estado JSON.
+- `internal/web`: interfaz HTML y API HTTP.
+- `cmd/web`: punto de entrada del servidor.
+- `features/`: especificación Gherkin.
+- `docs/`: este informe IEEE.
 
-## IV. Diseño
+El archivo de estado contiene la cuenta y el historial. La escritura usa un archivo temporal sincronizado y reemplazo final para no informar éxito si falla la persistencia. Los intentos rechazados o inválidos mantienen el saldo sin cambios y registran su resultado cuando el almacenamiento está disponible.
 
-La solución se organiza en cuatro capas:
+## V. Interfaz y API
 
-- `internal/bank`: cuenta, importes, servicio y reglas de transacción.
-- `internal/storage`: lectura y escritura del estado JSON.
-- `internal/cli`: menú interactivo.
-- `internal/web`: UI HTML y API HTTP.
-- `cmd/cli` y `cmd/web`: puntos de entrada independientes que comparten el servicio.
+La aplicación se ejecuta localmente en `127.0.0.1:8080`.
 
-El documento `data/state.json` agrupa la cuenta y el historial. La escritura se realiza a un archivo temporal dentro del mismo directorio, se sincroniza y se reemplaza al finalizar. De este modo, el saldo y su registro no se guardan en archivos separados. El modelo usa `int64` en centavos para los cálculos monetarios.
-
-### A. Flujo de retiro
-
-1. El CLI o la Web recibe el importe y lo convierte a centavos.
-2. El servicio carga el estado y valida cuenta e importe.
-3. Si el retiro supera el saldo, agrega un evento `declined` sin modificarlo.
-4. Si el saldo es suficiente, actualiza el saldo y agrega un evento `success`.
-5. El estado completo se guarda como una sola operación de archivo.
-
-### B. Flujo de abono
-
-El servicio valida que el importe sea positivo, comprueba el límite entero para prevenir desbordamiento, suma el importe y persiste el saldo junto con el evento `success`.
-
-### C. Manejo de errores
-
-Los importes no válidos y los identificadores de cuenta incorrectos generan eventos `error` cuando la fuente de datos está disponible. Si el almacenamiento falla, el servicio devuelve el error y no reporta éxito. No es posible persistir un evento de error cuando el propio medio de almacenamiento está indisponible.
-
-## V. Implementación de la aplicación Web
-
-La aplicación se inicia localmente en `127.0.0.1:8080`. La interfaz permite retirar o abonar y consulta saldo e historial mediante los endpoints:
-
-| Método | Ruta | Propósito |
+| Método | Ruta | Función |
 |---|---|---|
 | GET | `/` | Interfaz Web. |
 | GET | `/api/state` | Cuenta, saldo e historial. |
-| GET | `/api/transactions` | Historial de transacciones. |
-| POST | `/api/withdraw` | Registrar un retiro. |
-| POST | `/api/deposit` | Registrar un abono. |
+| GET | `/api/transactions` | Historial JSON. |
+| POST | `/api/withdraw` | Procesar un retiro. |
+| POST | `/api/deposit` | Procesar un abono. |
 
-La aplicación es demostrativa: no contiene autenticación ni se debe exponer directamente a Internet. GitHub aloja el código fuente y la automatización CI; GitHub Pages no ejecuta el backend Go.
+## VI. Verificación y ejecución
 
-## VI. Verificación
+Requiere Go 1.23 o posterior. Desde la raíz del proyecto:
 
-Las pruebas cubren retiros aprobados y rechazados, abonos, errores de validación, fallos de persistencia, conversión monetaria, lectura y escritura JSON, y rutas HTTP/CLI.
-
-Comandos de validación:
-
-```text
+```powershell
+go run ./cmd/web
 go test ./...
 go vet ./...
 ```
 
-El workflow de GitHub Actions ejecuta `go test -race -cover ./...` (incluidos los escenarios Godog) y `go vet ./...` en cada push y pull request. El ZIP se genera con `scripts/package.ps1`; no contiene binarios ni estado local.
+La aplicación es una demostración académica local: no implementa autenticación ni está destinada a exposición directa a Internet. GitHub Actions ejecuta pruebas y análisis estático.
 
-## VII. Limitaciones y trabajo futuro
+## VII. Conclusiones
 
-La persistencia JSON está destinada a una demo de una sola instancia; varios procesos que escriban simultáneamente al mismo archivo no están coordinados. La cuenta y la sesión son fijas, y el servicio Web no implementa autenticación, autorización, límites de tasa ni despliegue. Antes de un uso productivo, se recomienda una base de datos transaccional, control de concurrencia, gestión de identidades, HTTPS, auditoría protegida y pruebas de despliegue.
-
-## VIII. Conclusiones
-
-El proyecto demuestra un flujo incremental desde CLI hasta Web y mantiene las reglas de negocio centralizadas. Los escenarios Gherkin hacen explícitos los resultados esperados para retiro, abono e integridad; las pruebas automatizadas verifican los cambios de saldo y el registro JSON. El entregable incluye código fuente, informe y script reproducible de empaquetado.
+La entrega ofrece una aplicación Web organizada por responsabilidades, mantiene el registro JSON de transacciones y proporciona escenarios BDD y pruebas automatizadas para retiro, abono e integridad. La estructura publicada contiene únicamente los fuentes y documentos necesarios para esta entrega final.
 
 ## Referencias
 
-[1] Cucumber, “Gherkin reference,” documentación oficial.  
+[1] Cucumber, “Gherkin Reference,” documentación oficial.  
 [2] Go Authors, “The Go Programming Language Documentation,” documentación oficial.

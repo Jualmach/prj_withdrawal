@@ -1,64 +1,27 @@
-# prj_withdrawal
+# prj_withdrawal — Entrega 3: aplicación web refactorizada
 
-Proyecto incremental de Semana 7c: retiro y abono en efectivo, registro JSON de transacciones y refactorización a una aplicación Web en Go.
+Aplicación web académica en Go para retiro y abono en efectivo, con persistencia JSON íntegra, auditoría de transacciones y escenarios BDD.
 
-## Entregables incluidos
+## Alcance de esta entrega
 
-1. **Punto de partida — CLI:** retiro de efectivo (US-01a) y consulta de saldo.
-2. **Incremento — Abono:** abono en efectivo (US-01b).
-3. **Incremento — Integridad:** registro JSON de operaciones exitosas, rechazadas y errores (US-04); el saldo y el historial se guardan en un mismo archivo para evitar actualizaciones parciales.
-4. **Refactorización — App Web:** interfaz HTTP que reutiliza el mismo dominio, persistencia y reglas del CLI.
-5. **Calidad y entrega:** escenarios Gherkin ejecutados con Godog (Cucumber para Go), pruebas Go, informe estilo IEEE y script para generar el ZIP fuente.
+- Interfaz web para consultar saldo e historial y procesar retiros y abonos.
+- API HTTP: `GET /api/state`, `GET /api/transactions`, `POST /api/withdraw`, `POST /api/deposit`.
+- Registro JSON con cuenta y transacciones en el mismo archivo; importes en centavos enteros.
+- Escenarios Gherkin de US-01a, US-01b y US-04, pruebas automatizadas e informe IEEE en `docs/informe-ieee.md`.
 
-Los escenarios se encuentran en `features/`. Godog los ejecuta como parte de `go test ./...`; las pruebas unitarias TDD de cada paquete Go están junto al código en `internal/`.
+## Requisitos y ejecución
 
-## Requisitos
-
-- Go 1.23 o posterior.
-- PowerShell 5.1 o posterior para crear el ZIP en Windows.
-
-Las reglas de negocio usan la biblioteca estándar de Go. Godog se descarga para ejecutar los escenarios Gherkin como pruebas BDD.
-
-## Ejecutar el CLI
-
-Desde esta carpeta:
-
-```powershell
-go run ./cmd/cli
-```
-
-Opciones del menú: retirar, abonar, consultar saldo, ver transacciones o salir. El importe acepta hasta dos decimales (por ejemplo, `25.75`). La cuenta demo comienza con S/ 1,000.00.
-
-## Ejecutar la aplicación Web
-
-En una terminal:
+Se requiere Go 1.23 o posterior. Desde la raíz del proyecto:
 
 ```powershell
 go run ./cmd/web
 ```
 
-Abre <http://127.0.0.1:8080>. La aplicación permite retirar y abonar, muestra el saldo y presenta el historial. También expone `GET /api/state`, `GET /api/transactions`, `POST /api/withdraw` y `POST /api/deposit`.
+Abre <http://127.0.0.1:8080>. Opciones: `go run ./cmd/web -address 127.0.0.1:8080 -data data/state.json`.
 
-El servidor se enlaza por defecto a `127.0.0.1` y no incluye autenticación: es una demo académica local, no un sistema listo para exponer en Internet. Ejecuta una sola instancia a la vez para evitar escrituras concurrentes desde varios procesos.
+La cuenta demo se carga desde `internal/storage/default-state.json` cuando todavía no existe el archivo de estado. La aplicación es una demo académica local, no incluye autenticación y no debe exponerse directamente a Internet.
 
-## Datos y transacciones
-
-La aplicación lee y escribe `data/state.json`. Si el archivo aún no existe, carga la cuenta demo desde `internal/storage/default-state.json`. El estado contiene la cuenta y una lista JSON de transacciones:
-
-```json
-{
-  "account": {
-    "id": "acct-001",
-    "owner": "Cliente",
-    "balance_cents": 100000
-  },
-  "transactions": []
-}
-```
-
-Los importes se representan como centavos enteros para evitar errores de redondeo de punto flotante. Cada registro incluye identificador, tipo, resultado (`success`, `declined` o `error`), importe, saldo posterior, fecha UTC y mensaje. El archivo completo se escribe en un temporal y se reemplaza después de sincronizarlo; no se presenta una operación como exitosa si falla el guardado.
-
-## Pruebas y análisis estático
+## BDD, pruebas y análisis
 
 ```powershell
 go mod download
@@ -66,20 +29,12 @@ go test ./...
 go vet ./...
 ```
 
+Los escenarios están en `features/` y se ejecutan con Godog como parte de `go test ./...`. GitHub Actions automatiza pruebas con detector de condiciones de carrera y `go vet`.
+
 ## Crear el ZIP fuente
 
 ```powershell
-.\scripts\package.ps1
+./scripts/package.ps1 -OutputPath ./Entrega-3.zip -Force
 ```
 
-Por defecto, crea `prj_withdrawal-source.zip` junto a la carpeta del proyecto. Para reemplazar el ZIP generado en una ejecución anterior, agrega `-Force`. Puede indicarse otra ruta:
-
-```powershell
-.\scripts\package.ps1 -OutputPath 'C:\ruta\prj_withdrawal-source.zip'
-```
-
-El ZIP omite `.git`, binarios y el estado de datos local.
-
-## Publicación
-
-El código se publica en [Jualmach/prj_withdrawal](https://github.com/Jualmach/prj_withdrawal). GitHub Actions ejecuta las pruebas Go, incluidos los escenarios Godog, y `go vet` en cada push y pull request.
+El paquete incluye código, escenarios e informe, y excluye `.git`, datos locales y binarios.
